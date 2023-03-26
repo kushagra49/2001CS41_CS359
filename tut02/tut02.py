@@ -155,7 +155,7 @@ def ftp(interface,ip_address):
 def sniff(interface):
     #ip_address=socket.gethostbyname(hostname)
     global ip_address
-    print("Enter 0 for DNS, 1 for TCP, 2 for ARP, 3 for PING, 4 for FTP")
+    print("Enter 0 for DNS and TCP, 1 for ARP, 2 for PING, 3 for FTP")
     i=input()
     if(i=="0"):
         print("Search for site in private tab to get its dns query response tcp open and close using kompas.com according to doc")
