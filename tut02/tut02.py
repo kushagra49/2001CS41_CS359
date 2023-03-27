@@ -122,33 +122,55 @@ def arp(interface):
 
 
 def ftpstop(packet):
-    if(a==2):
+    if(b==2):
         return True
     else:
         return False
 arr=[]
+b=0
+pack=scapy.packet
 def prcoessftp(packet):
-    global a
+    global b
     global arr
     filename="FTP_connection_close_2001CS41.pcap"
     #print(packet)
-    if((packet[scapy.TCP].flags==0x011 or a>=0)):
+    global pack
+    if((packet[scapy.TCP].flags==0x011)or b>=0):
         x=True
         for y in arr:
             if(y==packet[scapy.TCP].seq):
                 x=False
         if(x==True):
+            if(b==-1):
+                print(packet)
+                scapy.wrpcap(filename, pack, append=True)
             print(packet)
             scapy.wrpcap(filename, packet, append=True)
-            a+=1
+            b+=1
             arr.append(packet[scapy.TCP].seq)
-
+    if(packet[scapy.TCP].flags==0x018):
+        pack=packet
+def ftpconstart(packet):
+    global b
+    filename="FTP_Connection_start_2001CS41.pcap"
+    #print(packet)
+    if(b<3):
+        print(packet)
+        scapy.wrpcap(filename, packet, append=True)
+        b+=1
+        return False
+    elif(b<8):
+        if(packet[scapy.TCP].flags==0x018):
+            print(pack)
+            scapy.wrpcap(filename, packet, append=True)
+            b+=1
+            return False
+    else:
+        b=-1
+        return True
 def ftp(interface,ip_address):
     filter="port 21 and host "+ ip_address
-    filename="FTP_Connection_start_2001CS41.pcap"
-    capture=scapy.sniff(iface=interface,count=3,filter=filter)
-    capture.summary()
-    scapy.wrpcap(filename,capture)
+    scapy.sniff(iface=interface,filter=filter,stop_filter=ftpconstart)
     scapy.sniff(iface=interface, filter=filter, prn=prcoessftp, stop_filter=ftpstop)
 
 
@@ -167,8 +189,8 @@ def sniff(interface):
         print("Ping 8.8.8.8 to capture")
         ping_request_response(interface,"8.8.8.8")
     elif(i=="3"):
-        print("Connect to ftp server (used ftp seed@192.168.64.3 on my machine, code according to it")
-        ftp("bridge100","192.168.64.3") #bridge100 is the iface for vm on which ftp server is set, and 192.168.64.3 is the IP
+        print("Connect to ftp server (used ftp seed@192.168.64.4 on my machine, code according to it")
+        ftp("bridge100","192.168.64.4") #bridge100 is the iface for vm on which ftp server is set, and 192.168.64.3 is the IP
     else:
         print("Invalid Input") 
 
