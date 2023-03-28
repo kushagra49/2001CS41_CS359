@@ -2,18 +2,12 @@
 import socket		
 import sys	
 def main():
-# Create a socket object
     n=len(sys.argv)
     if(n!=3):
         print("Enter 2 command line arguments only, first hostname or ip, second port number of server")
         quit()
-    
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)		
-
-    # Define the port on which you want to connect
     port = int(sys.argv[2])			
-
-    # connect to the server on local computer
     try:
         s.connect((sys.argv[1], port))
     except ConnectionRefusedError:
@@ -23,8 +17,6 @@ def main():
         print("Invalid IP or Port")
         quit()
     while(True):
-    # receive data from the server and decoding to get the string.
-        
         welcome=s.recv(1024).decode()
         print (welcome)
         tocal=input()
