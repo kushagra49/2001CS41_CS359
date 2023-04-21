@@ -10,7 +10,7 @@ list_routers = []  # contains all routers
 adj_list = {}  # adjacency list
 router_queues = {}  # queue for each router
 lock = threading.Lock()  # thread lock for printing
-ans_table={}
+ans_table = {}
 # process for each router
 
 
@@ -19,43 +19,43 @@ def lsr(router_id):
     adj_list_router["itr"] = 0
     adj_list_router["ttl"] = timedelta(minutes=30)
     adj_list_router["src"] = router_id
-    router_time=datetime.now()
+    router_time = datetime.now()
     for x in list_routers:
         adj_list_router[x] = {}
     for x in adj_list[router_id]:
         adj_list_router[router_id][x] = adj_list[router_id][x]
         adj_list_router[x][router_id] = adj_list_router[router_id][x]
     for x in adj_list[router_id]:
-            try:
-                router_queues[x].put_nowait(copy.deepcopy(adj_list_router))
-            except:
-                print(x, "router's queue was full")
+        try:
+            router_queues[x].put_nowait(copy.deepcopy(adj_list_router))
+        except:
+            print(x, "router's queue was full")
     while (True):
-        if(router_time-datetime.now()>adj_list_router["ttl"]):
-            router_time=datetime.now()
-            adj_list_router["itr"]=0
-        breaker=1
+        if (router_time-datetime.now() > adj_list_router["ttl"]):
+            router_time = datetime.now()
+            adj_list_router["itr"] = 0
+        breaker = 1
         for x in router_queues:
-            if(not router_queues[x].empty()):
-                breaker=0
+            if (not router_queues[x].empty()):
+                breaker = 0
                 break
-        if(breaker):
+        if (breaker):
             break
         while (not router_queues[router_id].empty()):
             shared_adj_list = router_queues[router_id].get()
-            change=0
+            change = 0
             for x in shared_adj_list:
                 if (not x == "itr" and not x == "src" and not x == "ttl"):
                     for y in shared_adj_list[x]:
                         if (y == "itr"):
                             continue
-                        if(y not in adj_list_router[x]):
-                            change=1
+                        if (y not in adj_list_router[x]):
+                            change = 1
                         adj_list_router[x][y] = shared_adj_list[x][y]
                         adj_list_router[y][x] = shared_adj_list[x][y]
-            if(change):    
+            if (change):
                 adj_list_router["itr"] += 1
-                router_time=datetime.now()
+                router_time = datetime.now()
                 for x in adj_list[router_id]:
                     try:
                         router_queues[x].put_nowait(
@@ -83,10 +83,10 @@ def lsr(router_id):
                                 adj_list_router[x][curr]
                             routing_table[x][0] = curr
                             queue_for_sp.put_nowait(x)
-                ans_table[router_id]=routing_table
+                ans_table[router_id] = routing_table
                 lock.acquire()
                 print("Got table at", router_id, "from",
-                    shared_adj_list["src"], "\nitr received:",shared_adj_list["itr"], "router was at", adj_list_router["itr"]-1)
+                      shared_adj_list["src"], "\nitr received:", shared_adj_list["itr"], "router was at", adj_list_router["itr"]-1)
                 print("_________________________")
                 print("|\t\t\t|")
                 s = "| Edges At "+router_id+"\t\t|"
@@ -95,7 +95,7 @@ def lsr(router_id):
                 print("|_______________________|", "\n|\t|\t|\t|")
                 print("|", end=' ')
                 print("From", "\t|",
-                    "To", "\t|", "Cost", "\t|")
+                      "To", "\t|", "Cost", "\t|")
                 print("|_______|_______|_______|")
                 print("|\t|\t|\t|")
                 for x in adj_list_router:
@@ -106,7 +106,7 @@ def lsr(router_id):
                             continue
                         print("|", end=' ')
                         print(x, "\t|",
-                            y, "\t|", adj_list_router[x][y], "\t|")
+                              y, "\t|", adj_list_router[x][y], "\t|")
                 print("|_______|_______|_______|")
                 print("_________________________")
                 print("|\t\t\t|")
@@ -115,18 +115,17 @@ def lsr(router_id):
                 print("|_______________________|", "\n|\t|\t|\t|")
                 print("|", end=' ')
                 print("To", "\t|",
-                    "Via", "\t|", "Cost", "\t|")
+                      "Via", "\t|", "Cost", "\t|")
                 print("|_______|_______|_______|")
                 print("|\t|\t|\t|")
                 for x in list_routers:
                     print("|", end=' ')
                     print(x, "\t|",
-                        ans_table[router_id][x][0], "\t|", ans_table[router_id][x][1], "\t|")
+                          ans_table[router_id][x][0], "\t|", ans_table[router_id][x][1], "\t|")
                 print("|_______|_______|_______|")
                 lock.release()
             del shared_adj_list
         time.sleep(2)
-   
 
 
 def main():
@@ -165,7 +164,7 @@ def main():
     # wait for all router threads to join before ending program
     for x in range(len(list_routers)):
         list_of_threads[x].join()
-    #printing the routing tables of all the routers
+    # printing the routing tables of all the routers
     for router_id in ans_table:
         print("_________________________")
         print("|\t\t\t|")
@@ -174,13 +173,13 @@ def main():
         print("|_______________________|", "\n|\t|\t|\t|")
         print("|", end=' ')
         print("To", "\t|",
-            "Via", "\t|", "Cost", "\t|")
+              "Via", "\t|", "Cost", "\t|")
         print("|_______|_______|_______|")
         print("|\t|\t|\t|")
         for x in list_routers:
             print("|", end=' ')
             print(x, "\t|",
-                ans_table[router_id][x][0], "\t|", ans_table[router_id][x][1], "\t|")
+                  ans_table[router_id][x][0], "\t|", ans_table[router_id][x][1], "\t|")
         print("|_______|_______|_______|")
     # This shall be the last lines of the code.
     end_time = datetime.now()
