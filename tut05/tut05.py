@@ -15,35 +15,47 @@ ans_table = {}
 
 
 def lsr(router_id):
+    # adj list of the router that stores its topology of the graph
     adj_list_router = {}
+    # iteration info of the topology, ttl and the source
     adj_list_router["itr"] = 0
     adj_list_router["ttl"] = timedelta(minutes=30)
     adj_list_router["src"] = router_id
     router_time = datetime.now()
+    # initialise adjlist
     for x in list_routers:
         adj_list_router[x] = {}
+    # fill adjacentcy list with neighbours
     for x in adj_list[router_id]:
         adj_list_router[router_id][x] = adj_list[router_id][x]
         adj_list_router[x][router_id] = adj_list_router[router_id][x]
+    # send this info, basically anouncing that I am this node and these are my neighbours
     for x in adj_list[router_id]:
         try:
             router_queues[x].put_nowait(copy.deepcopy(adj_list_router))
         except:
             print(x, "router's queue was full")
     while (True):
+        # reset iteration according to tll
         if (router_time-datetime.now() > adj_list_router["ttl"]):
             router_time = datetime.now()
             adj_list_router["itr"] = 0
+        # boolean to break loop
         breaker = 1
+        # if all routers are empty all graphs have coverged
         for x in router_queues:
             if (not router_queues[x].empty()):
                 breaker = 0
                 break
+        # break the loop if all queues are empty
         if (breaker):
             break
+        # while queue is not empty
         while (not router_queues[router_id].empty()):
+            # fetch some information
             shared_adj_list = router_queues[router_id].get()
             change = 0
+            # check if there is info, if something is changed, set change to 1
             for x in shared_adj_list:
                 if (not x == "itr" and not x == "src" and not x == "ttl"):
                     for y in shared_adj_list[x]:
@@ -53,26 +65,37 @@ def lsr(router_id):
                             change = 1
                         adj_list_router[x][y] = shared_adj_list[x][y]
                         adj_list_router[y][x] = shared_adj_list[x][y]
+            # if changed, then apply djikstra and send same info to neighbours(flooding)
             if (change):
+                # increase iteration
                 adj_list_router["itr"] += 1
                 router_time = datetime.now()
+                # send info to neighbours
                 for x in adj_list[router_id]:
                     try:
                         router_queues[x].put_nowait(
                             copy.deepcopy(shared_adj_list))
                     except:
                         print(x, "router's queue was full")
+                # djikstra
+                # queue for djikstra
                 queue_for_sp = queue.Queue(len(list_routers))
+                # routing table
                 routing_table = {}
+                # initialise routing table
                 for x in list_routers:
                     routing_table[x] = [-1, -1]
                 routing_table[router_id] = [router_id, 0]
                 queue_for_sp.put_nowait(router_id)
+                # while queue is not empty
                 while (not queue_for_sp.empty()):
+                    # take a node
                     curr = queue_for_sp.get()
+                    # for all edges of the node
                     for x in adj_list_router[curr]:
                         if (x == "itr"):
                             continue
+                        # update if node can reaach in better distance and add it to queue
                         if (routing_table[x][1] == -1):
                             routing_table[x][1] = routing_table[curr][1] + \
                                 adj_list_router[x][curr]
@@ -83,10 +106,12 @@ def lsr(router_id):
                                 adj_list_router[x][curr]
                             routing_table[x][0] = curr
                             queue_for_sp.put_nowait(x)
+                # save routing table in answer table
                 ans_table[router_id] = routing_table
+                # printing table, where info received , prints routing table and graph of this node, a bit hardcoded
                 lock.acquire()
                 print("Got table at", router_id, "from",
-                      shared_adj_list["src"], "\nitr received:", shared_adj_list["itr"], "router was at", adj_list_router["itr"]-1)
+                      shared_adj_list["src"], "\nRouter was at iteration", adj_list_router["itr"]-1)
                 print("_________________________")
                 print("|\t\t\t|")
                 s = "| Edges At "+router_id+"\t\t|"
@@ -125,6 +150,7 @@ def lsr(router_id):
                 print("|_______|_______|_______|")
                 lock.release()
             del shared_adj_list
+        # sleep for info to arrive as queue would have been empty if we got here
         time.sleep(2)
 
 
