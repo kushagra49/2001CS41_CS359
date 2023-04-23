@@ -152,6 +152,37 @@ def lsr(router_id):
             del shared_adj_list
         # sleep for info to arrive as queue would have been empty if we got here
         time.sleep(2)
+    # djikstra in case graph was always complete in trivial cases
+    # queue for djikstra
+    queue_for_sp = queue.Queue(len(list_routers))
+    # routing table
+    routing_table = {}
+    # initialise routing table
+    for x in list_routers:
+        routing_table[x] = [-1, -1]
+    routing_table[router_id] = [router_id, 0]
+    queue_for_sp.put_nowait(router_id)
+    # while queue is not empty
+    while (not queue_for_sp.empty()):
+        # take a node
+        curr = queue_for_sp.get()
+        # for all edges of the node
+        for x in adj_list_router[curr]:
+            if (x == "itr"):
+                continue
+            # update if node can reaach in better distance and add it to queue
+            if (routing_table[x][1] == -1):
+                routing_table[x][1] = routing_table[curr][1] + \
+                    adj_list_router[x][curr]
+                routing_table[x][0] = x
+                queue_for_sp.put_nowait(x)
+            elif (routing_table[x][1] > routing_table[curr][1]+adj_list_router[x][curr]):
+                routing_table[x][1] = routing_table[curr][1] + \
+                    adj_list_router[x][curr]
+                routing_table[x][0] = curr
+                queue_for_sp.put_nowait(x)
+    # save routing table in answer table
+    ans_table[router_id] = routing_table
 
 
 def main():
